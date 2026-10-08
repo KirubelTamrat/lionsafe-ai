@@ -166,101 +166,141 @@ export default function Home() {
   // ----------------------------------------
 
   async function askLionSafe(
-    suggestedQuestion = null
-  ) {
-    const text =
-      suggestedQuestion ||
-      question;
+  suggestedQuestion = null
+) {
+  const text =
+    suggestedQuestion ||
+    question;
 
-    if (
-      !text.trim() ||
-      !data
-    ) {
-      return;
+  if (
+    !text.trim() ||
+    !data
+  ) {
+    return;
+  }
+
+
+  // Clear input
+  setQuestion("");
+
+
+  // Add user's message to the screen
+  setMessages(
+    (previous) => [
+      ...previous,
+      {
+        role: "user",
+        text,
+      },
+    ]
+  );
+
+
+  setChatLoading(true);
+
+
+  try {
+    const response =
+      await fetch(
+        "/api/chat",
+        {
+          method: "POST",
+
+          headers: {
+            "Content-Type":
+              "application/json",
+          },
+
+          body: JSON.stringify({
+            question: text,
+
+            stats:
+              data.stats,
+
+            incidents:
+              data.incidents,
+
+            // Give LionSafe recent conversation memory
+            history:
+              messages
+                .slice(-8)
+                .map(
+                  (message) => ({
+                    role:
+                      message.role,
+
+                    text:
+                      message.text,
+                  })
+                ),
+          }),
+        }
+      );
+
+
+    const result =
+      await response.json();
+
+
+    if (!response.ok) {
+      throw new Error(
+        result.error ||
+          "Chat failed"
+      );
     }
 
 
-    setQuestion("");
+    // Store AI answer + evidence
+    setMessages(
+      (previous) => [
+        ...previous,
+        {
+          role:
+            "assistant",
+
+          text:
+            result.answer,
+
+          sources:
+            result.sources ||
+            [],
+
+          toolsUsed:
+            result.toolsUsed ||
+            [],
+        },
+      ]
+    );
+
+  } catch (error) {
+    console.error(
+      error
+    );
 
 
     setMessages(
       (previous) => [
         ...previous,
         {
-          role: "user",
-          text,
+          role:
+            "assistant",
+
+          text:
+            "I couldn't analyze the dataset right now.",
+
+          sources: [],
+
+          toolsUsed: [],
         },
       ]
     );
 
-
-    setChatLoading(true);
-
-
-    try {
-      const response =
-        await fetch(
-          "/api/chat",
-          {
-            method: "POST",
-
-            headers: {
-              "Content-Type":
-                "application/json",
-            },
-
-            body: JSON.stringify({
-              question: text,
-              stats: data.stats,
-              incidents:
-                data.incidents,
-            }),
-          }
-        );
-
-
-      const result =
-        await response.json();
-
-
-      if (!response.ok) {
-        throw new Error(
-          result.error ||
-            "Chat failed"
-        );
-      }
-
-
-      setMessages(
-        (previous) => [
-          ...previous,
-          {
-            role: "assistant",
-            text: result.answer,
-          },
-        ]
-      );
-
-    } catch (error) {
-      console.error(error);
-
-
-      setMessages(
-        (previous) => [
-          ...previous,
-          {
-            role: "assistant",
-            text:
-              "I couldn't analyze the dataset right now.",
-          },
-        ]
-      );
-
-    } finally {
-      setChatLoading(false);
-    }
+  } finally {
+    setChatLoading(
+      false
+    );
   }
-
+}
 
   // ----------------------------------------
   // DATA EXPLORER HELPERS
@@ -1256,7 +1296,131 @@ export default function Home() {
                       }
                     >
                       {
-                        message.text
+                        <div>
+
+  {/* MESSAGE TEXT */}
+
+  <div className="whitespace-pre-line">
+    {message.text}
+  </div>
+
+
+  {/* TOOL INDICATOR */}
+
+  {message.role === "assistant" &&
+    message.toolsUsed?.length > 0 && (
+
+      <div className="flex flex-wrap gap-2 mt-4">
+
+        {message.toolsUsed.map((tool) => (
+
+          <span
+            key={tool}
+            className="text-[10px] bg-blue-950/60 border border-blue-900/60 text-blue-300 px-2 py-1 rounded-full"
+          >
+            {tool
+              .replaceAll("_", " ")
+              .toUpperCase()}
+          </span>
+
+        ))}
+
+      </div>
+
+    )}
+
+
+  {/* DATA SOURCES */}
+
+  {message.role === "assistant" &&
+    message.sources?.length > 0 && (
+
+      <div className="mt-5 pt-4 border-t border-slate-700/60">
+
+        <div className="text-[10px] font-semibold tracking-[0.18em] text-slate-500 mb-3">
+          DATA USED
+        </div>
+
+
+        <div className="space-y-2">
+
+          {message.sources.map((source) => (
+
+            <button
+              key={source.id}
+
+              onClick={() => {
+
+                // Search for the exact incident
+                setSearchTerm(source.id);
+
+                // Open Data tab
+                setActiveTab("data");
+
+              }}
+
+              className="w-full text-left rounded-xl bg-slate-950/70 border border-slate-700/70 hover:border-blue-700 hover:bg-blue-950/20 p-3 transition"
+            >
+
+              <div className="flex items-start justify-between gap-3">
+
+                <div>
+
+                  <div className="text-sm font-medium text-white">
+                    {source.location || "Unknown location"}
+                  </div>
+
+
+                  <div className="text-xs text-blue-300 mt-1">
+                    {source.offenses?.[0] || "Incident"}
+                  </div>
+
+                </div>
+
+
+                <div className="text-[10px] font-mono text-slate-500 shrink-0">
+                  {source.id}
+                </div>
+
+              </div>
+
+
+              {source.nature && (
+
+                <div className="text-xs text-slate-400 mt-3 leading-5">
+                  {source.nature}
+                </div>
+
+              )}
+
+
+              <div className="flex items-center justify-between mt-3 text-[11px] text-slate-600">
+
+                <span>
+                  {source.reported}
+                </span>
+
+                {source.distance_miles !== undefined && (
+
+                  <span className="text-blue-400">
+                    {source.distance_miles} mi away
+                  </span>
+
+                )}
+
+              </div>
+
+            </button>
+
+          ))}
+
+        </div>
+
+      </div>
+
+    )}
+
+</div>
                       }
                     </div>
 
