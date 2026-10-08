@@ -9,11 +9,14 @@
     "lint": "eslint"
   },
   "dependencies": {
+    "@terraformer/arcgis": "^2.2.2",
     "html-to-text": "^10.0.1",
+    "leaflet": "^1.9.4",
     "next": "16.4.0",
     "openai": "^7.30.0",
     "react": "19.3.0",
     "react-dom": "19.3.0",
+    "react-leaflet": "^5.0.0",
     "recharts": "^3.10.1"
   },
   "devDependencies": {
