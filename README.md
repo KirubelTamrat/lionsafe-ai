@@ -1,36 +1,129 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://github.com/vercel/next.js/tree/canary/packages/create-next-app).
+# LionSafe AI 
 
-## Getting Started
+LionSafe AI is an interactive campus intelligence dashboard built for Penn State University Park.
 
-First, run the development server:
+The project started with a simple question:
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+> Penn State already publishes public safety data, but how can we make that data easier for students to actually understand and explore?
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+LionSafe takes publicly available Penn State incident data, cleans and analyzes it, visualizes patterns, and uses AI to help users ask questions about what the data shows.
 
-You can start editing the page by modifying `app/page.js`. The page auto-updates as you edit the file.
+The project is still actively being developed.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+---
 
-## Learn More
+## What LionSafe Does
 
-To learn more about Next.js, take a look at the following resources:
+LionSafe currently combines Penn State public safety data with an interactive web dashboard.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+Users can:
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+- View recent University Park police incident reports
+- See the most common incident categories
+- Compare reports by time of day
+- View locations with the most reported incidents
+- See how many cases are currently open
+- Read an AI-generated summary of recent patterns
+- Ask questions about the loaded incident data using an interactive AI chat
+- Explore Penn State University Park through an interactive GIS map
+- View official Penn State building polygons using public PASDA GIS data
 
-## Deploy on Vercel
+The goal is not to label parts of campus as "safe" or "unsafe."
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+Instead, LionSafe focuses on helping users explore and understand publicly reported campus activity.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+---
+
+## Current Dashboard
+
+The dashboard currently includes:
+
+### Incident Overview
+
+LionSafe automatically pulls recent records from the Penn State University Police Daily Crime Log.
+
+Each incident can contain information such as:
+
+- Incident number
+- Reported time
+- Occurrence time
+- Incident description
+- Offense category
+- Location
+- Case disposition
+
+The application currently analyzes recent University Park records rather than the entire historical crime log.
+
+---
+
+### Data Analysis
+
+The backend turns the raw police log into structured data and calculates statistics including:
+
+- Total incidents analyzed
+- Open cases
+- Most common offense categories
+- Most frequently reported locations
+- Reports by time of day
+
+Reported times are currently grouped into:
+
+- Morning
+- Afternoon
+- Evening
+- Overnight
+
+One incident may contain multiple offense classifications, so offense counts should not necessarily be interpreted as unique incident counts.
+
+---
+
+## Ask LionSafe
+
+LionSafe includes an AI assistant that can answer questions about the currently loaded dataset.
+
+Example questions:
+
+- What time of day has the most reports?
+- What are the most common incident categories?
+- How many cases are currently open?
+- What patterns stand out?
+- Does the location with the most reports mean it is dangerous?
+
+The AI is instructed to answer using the supplied dataset rather than inventing information.
+
+It is also instructed not to:
+
+- Predict future crimes
+- Label locations as safe or unsafe
+- Estimate an individual's chance of becoming a victim
+- Make assumptions about victims or suspects
+
+The AI receives structured statistics and public incident information from the application.
+
+---
+
+## Interactive Campus Map
+
+LionSafe also integrates official Penn State GIS data from PASDA.
+
+The current map loads more than 1,000 University Park building polygons and allows users to:
+
+- Pan around campus
+- Zoom in and out
+- Hover over buildings
+- Click buildings
+- Explore official Penn State geographic data
+
+The GIS data is retrieved from Penn State/PASDA's ArcGIS services and converted into GeoJSON before being displayed with Leaflet.
+
+Work is currently underway to match police incident locations with their corresponding campus buildings and display incidents directly on the map.
+
+Future map layers may include:
+
+- Parking lots and garages
+- Roads
+- Sidewalks
+- Crosswalks
+- Emergency phones
+- Bus stops
+- Campus alerts
