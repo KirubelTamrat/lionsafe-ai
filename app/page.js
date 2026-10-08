@@ -1,6 +1,14 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import { useEffect, useState } from "react";
+
+const CampusMap = dynamic(
+  () => import("@/components/CampusMap"),
+  {
+    ssr: false,
+  }
+);
 
 export default function Home() {
   const [data, setData] = useState(null);
@@ -172,6 +180,7 @@ export default function Home() {
 
         {/* STAT CARDS */}
 
+
         <section className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4 mb-8">
           <StatCard
             label="REPORTS ANALYZED"
@@ -192,6 +201,40 @@ export default function Home() {
             label="TOP REPORTED LOCATION"
             value={stats.topLocations[0]?.name || "N/A"}
           />
+        </section>
+
+        {/* INTERACTIVE CAMPUS MAP */}
+
+        <section className="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden mb-8">
+
+          <div className="p-6 border-b border-slate-800">
+
+            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+
+              <div>
+                <div className="text-blue-400 text-xs font-semibold tracking-[0.2em] mb-2">
+                  GEOSPATIAL INTELLIGENCE
+                </div>
+
+                <h2 className="text-2xl font-semibold">
+                  Penn State Campus Map
+                </h2>
+
+                <p className="text-slate-500 mt-2">
+                  Explore official University Park building GIS data.
+                </p>
+              </div>
+
+              <div className="text-sm text-slate-500">
+                1,287 GIS features loaded
+              </div>
+
+            </div>
+
+          </div>
+
+          <CampusMap />
+
         </section>
 
         {/* CHARTS */}
