@@ -233,7 +233,7 @@ export default function Home() {
 
           </div>
 
-          <CampusMap />
+          <CampusMap incidents={data.incidents}/>
 
         </section>
 
