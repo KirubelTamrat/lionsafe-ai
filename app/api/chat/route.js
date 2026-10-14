@@ -264,6 +264,121 @@ const tools = [
     strict: true,
   },
 
+  {
+    type: "function",
+
+    name:
+      "get_recent_reports",
+
+    description:
+      "Return the most recent incidents in the dataset, optionally limited to a specific location. Use this for latest reports, recent activity, or recent incidents at a site.",
+
+    parameters: {
+      type: "object",
+
+      properties: {
+        location: {
+          type: ["string", "null"],
+        },
+        limit: {
+          type: "number",
+        },
+      },
+
+      required: ["location", "limit"],
+      additionalProperties: false,
+    },
+
+    strict: true,
+  },
+
+  {
+    type: "function",
+
+    name:
+      "get_open_cases_summary",
+
+    description:
+      "Summarize currently open or unresolved incident cases by category, location, and time. Use this to answer questions about open cases, unresolved issues, or current active reports.",
+
+    parameters: {
+      type: "object",
+
+      properties: {
+        location: {
+          type: ["string", "null"],
+        },
+        category: {
+          type: ["string", "null"],
+        },
+        limit: {
+          type: "number",
+        },
+      },
+
+      required: ["location", "category", "limit"],
+      additionalProperties: false,
+    },
+
+    strict: true,
+  },
+
+  {
+    type: "function",
+
+    name:
+      "get_location_snapshot",
+
+    description:
+      "Get a concise summary for a campus location, including counts, major categories, and the latest reports. Use this when a user asks for a location summary or pattern analysis at a place.",
+
+    parameters: {
+      type: "object",
+
+      properties: {
+        location: {
+          type: "string",
+        },
+        limit: {
+          type: "number",
+        },
+      },
+
+      required: ["location", "limit"],
+      additionalProperties: false,
+    },
+
+    strict: true,
+  },
+
+  {
+    type: "function",
+
+    name:
+      "get_time_trends",
+
+    description:
+      "Summarize report patterns by time of day or recurring time period, optionally filtered by location or category. Use this to answer trend, timing, and pattern questions.",
+
+    parameters: {
+      type: "object",
+
+      properties: {
+        location: {
+          type: ["string", "null"],
+        },
+        category: {
+          type: ["string", "null"],
+        },
+      },
+
+      required: ["location", "category"],
+      additionalProperties: false,
+    },
+
+    strict: true,
+  },
+
 ];
 
 
@@ -351,7 +466,26 @@ const responseFormat = {
       answer: {
         type: "string",
         description:
-          "A concise natural-language answer for the user. No Markdown.",
+          "A concise direct answer in plain language for the user. No Markdown or JSON literals.",
+      },
+
+      summary: {
+        type: "array",
+        items: {
+          type: "object",
+          properties: {
+            label: {
+              type: "string",
+            },
+            value: {
+              type: "string",
+            },
+          },
+          required: ["label", "value"],
+          additionalProperties: false,
+        },
+        description:
+          "Up to three short insight cards that summarize the answer in an easy-to-digest way.",
       },
 
       followUps: {
@@ -400,6 +534,7 @@ const responseFormat = {
 
     required: [
       "answer",
+      "summary",
       "followUps",
       "uiAction",
     ],
@@ -408,6 +543,24 @@ const responseFormat = {
       false,
   },
 };
+
+function normalizeStructuredResponse(rawText) {
+  if (!rawText) {
+    return {};
+  }
+
+  try {
+    const parsed = JSON.parse(rawText);
+
+    if (parsed && typeof parsed === "object") {
+      return parsed;
+    }
+  } catch {
+    // Ignore parse errors and fall back to a plain-text answer below.
+  }
+
+  return {};
+}
 
 export async function POST(
   request
@@ -499,9 +652,11 @@ For every user question:
    - filtering by category, location, status, or time
    - nearby/geographic question
    - comparison question
+   - recent activity or open-case summary
+   - trend or location snapshot question
    - follow-up to the previous conversation
 
-2. Use a LionSafe tool whenever the answer depends on incident data, counts, filtering, geography, or distances.
+2. Use a LionSafe tool whenever the answer depends on incident data, counts, filtering, geography, distances, recency, open case status, or timing trends.
 
 3. Tool results are the source of truth.
 Do not manually guess counts, distances, matches, or incident facts.
@@ -577,12 +732,18 @@ Prefer 1 to 3 short paragraphs.
 
 Do not use Markdown syntax.
 
+Always return a structured JSON object with:
+- answer: a direct plain-language summary
+- summary: up to 3 short insight cards with label and value pairs
+- followUps: 2 or 3 short user prompts
+- uiAction: { type, incidentIds }
+
 Do not output:
 - asterisks
 - Markdown headings
 - Markdown tables
 - backticks
-- raw JSON
+- raw JSON text outside the required object format
 - long bullet lists
 
 Do not dump every matching incident into the answer.
@@ -616,11 +777,7 @@ Current LionSafe incident count: ${incidents.length}.
 
     let response =
     await openai.responses.create({
-    model: "gpt-6-luna",
-
-    reasoning: {
-      effort: "low",
-    },
+    model: "gpt-4.1-mini",
 
     instructions,
 
@@ -739,11 +896,7 @@ Current LionSafe incident count: ${incidents.length}.
       response =
         await openai.responses.create({
           model:
-            "gpt-6-luna",
-
-          reasoning: {
-            effort: "low",
-          },
+            "gpt-4.1-mini",
 
           instructions,
 
@@ -764,13 +917,36 @@ Current LionSafe incident count: ${incidents.length}.
     }
 
 
+    const structuredReply =
+      normalizeStructuredResponse(
+        response.output_text
+      );
+
+    const answerText =
+      typeof structuredReply.answer === "string"
+        ? structuredReply.answer.trim()
+        : response.output_text ||
+          "I couldn't produce a response from the available data.";
+
     return Response.json({
-
-      answer:
-        response.output_text ||
-        "I couldn't produce a response from the available data.",
-
-
+      answer: answerText,
+      summary:
+        Array.isArray(
+          structuredReply.summary
+        )
+          ? structuredReply.summary
+          : [],
+      followUps:
+        Array.isArray(
+          structuredReply.followUps
+        )
+          ? structuredReply.followUps
+          : [],
+      uiAction:
+        structuredReply.uiAction || {
+          type: "none",
+          incidentIds: [],
+        },
       sources:
         Array.from(
           sourceMap.values()
@@ -778,15 +954,12 @@ Current LionSafe incident count: ${incidents.length}.
           0,
           8
         ),
-
-
       toolsUsed:
         [
           ...new Set(
             toolsUsed
           ),
         ],
-
     });
 
 
@@ -797,11 +970,13 @@ Current LionSafe incident count: ${incidents.length}.
       error
     );
 
+    const message =
+      error?.message ||
+      "LionSafe could not analyze the data.";
 
     return Response.json(
       {
-        error:
-          "LionSafe could not analyze the data.",
+        error: message,
       },
       {
         status: 500,

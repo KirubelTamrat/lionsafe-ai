@@ -259,7 +259,22 @@ export default function Home() {
             "assistant",
 
           text:
-            result.answer,
+            result.answer ||
+            "I couldn't produce a response from the available data.",
+
+          summary:
+            result.summary ||
+            [],
+
+          followUps:
+            result.followUps ||
+            [],
+
+          uiAction:
+            result.uiAction || {
+              type: "none",
+              incidentIds: [],
+            },
 
           sources:
             result.sources ||
@@ -666,7 +681,7 @@ export default function Home() {
                 </Eyebrow>
 
                 <h1 className="text-3xl md:text-4xl font-bold tracking-tight mt-2">
-                  University Park at a glance
+                  Campus Now
                 </h1>
 
                 <p className="text-slate-500 mt-2 max-w-2xl">
@@ -1303,6 +1318,46 @@ export default function Home() {
   <div className="whitespace-pre-line">
     {message.text}
   </div>
+
+
+  {/* STRUCTURED SUMMARY */}
+
+  {message.role === "assistant" &&
+    message.summary?.length > 0 && (
+      <div className="mt-4 grid gap-2 sm:grid-cols-2">
+        {message.summary.map((item, idx) => (
+          <div
+            key={`${item.label}-${idx}`}
+            className="rounded-xl border border-slate-700/80 bg-slate-950/70 p-3"
+          >
+            <div className="text-[10px] font-semibold tracking-[0.14em] text-slate-500">
+              {item.label}
+            </div>
+            <div className="mt-2 text-sm font-semibold text-slate-100 leading-5">
+              {item.value}
+            </div>
+          </div>
+        ))}
+      </div>
+    )}
+
+
+  {/* FOLLOW-UP SUGGESTIONS */}
+
+  {message.role === "assistant" &&
+    message.followUps?.length > 0 && (
+      <div className="mt-4 flex flex-wrap gap-2">
+        {message.followUps.map((followUp) => (
+          <button
+            key={followUp}
+            onClick={() => askLionSafe(followUp)}
+            className="rounded-full border border-blue-900/80 bg-blue-950/40 px-3 py-1.5 text-[11px] text-blue-200 transition hover:bg-blue-950/80"
+          >
+            {followUp}
+          </button>
+        ))}
+      </div>
+    )}
 
 
   {/* TOOL INDICATOR */}
